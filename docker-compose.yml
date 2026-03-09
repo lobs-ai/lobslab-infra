@@ -1,0 +1,16 @@
+services:
+  lobslab-home:
+    build:
+      context: /Users/lobs/lobs-ai.github.io
+    ports:
+      - "127.0.0.1:3081:80"
+    restart: unless-stopped
+
+  nexus:
+    build:
+      context: /Users/lobs/lobs-nexus
+    ports:
+      - "127.0.0.1:3080:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

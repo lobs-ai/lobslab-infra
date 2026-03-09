@@ -1,0 +1,20 @@
+:8080 {
+	log {
+		output stdout
+		level INFO
+	}
+
+	@lobslab-home host lobslab.com
+	handle @lobslab-home {
+		reverse_proxy lobslab-home:80
+	}
+
+	@nexus host nexus.lobslab.com
+	handle @nexus {
+		reverse_proxy nexus:80
+	}
+
+	handle {
+		respond 404
+	}
+}

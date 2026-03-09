@@ -1,0 +1,9 @@
+tunnel: ee11947e-6dcd-44fd-83a1-acce335cdac4
+credentials-file: /Users/lobs/lobslab-infra/tunnel-credentials.json
+
+ingress:
+  - hostname: nexus.lobslab.com
+    service: http://127.0.0.1:3080
+  - hostname: lobslab.com
+    service: http://127.0.0.1:3081
+  - service: http_status:404
