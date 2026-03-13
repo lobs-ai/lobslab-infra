@@ -1,9 +1,9 @@
-tunnel: ee11947e-6dcd-44fd-83a1-acce335cdac4
-credentials-file: /Users/lobs/lobslab-infra/tunnel-credentials.json
+tunnel: 5e8ce13d-a3f2-4217-a135-d9b0b3a35ba5
+credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   - hostname: nexus.lobslab.com
-    service: http://127.0.0.1:3080
+    service: http://host.docker.internal:9420
   - hostname: lobslab.com
-    service: http://127.0.0.1:3081
+    service: http://lobslab-home:80
   - service: http_status:404
