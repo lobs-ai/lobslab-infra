@@ -1,0 +1,28 @@
+## dynamic.yml — Dynamic file configuration
+## Reload is automatic (file provider watches this file)
+## Use this for host-based services (not Docker containers)
+
+http:
+  routers:
+    # ── Traefik dashboard ────────────────────────────────────────────────────
+    # PRIVATE — requires Cloudflare Access policy for traefik.lobslab.com
+    traefik-dashboard:
+      rule: "Host(`traefik.lobslab.com`)"
+      entryPoints:
+        - web
+      service: api@internal
+
+    # ── Nexus (lobs-core on host port 9420) ──────────────────────────────────
+    # PRIVATE — requires Cloudflare Access policy for nexus.lobslab.com
+    nexus:
+      rule: "Host(`nexus.lobslab.com`)"
+      entryPoints:
+        - web
+      service: nexus
+
+  services:
+    # ── Nexus — routes to lobs-core running on host machine ─────────────────
+    nexus:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:9420"

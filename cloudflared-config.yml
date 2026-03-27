@@ -2,8 +2,8 @@ tunnel: 5e8ce13d-a3f2-4217-a135-d9b0b3a35ba5
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
-  - hostname: nexus.lobslab.com
-    service: http://host.docker.internal:9420
-  - hostname: lobslab.com
-    service: http://lobslab-home:80
+  # All *.lobslab.com traffic goes to Traefik — it handles routing by subdomain
+  - hostname: "*.lobslab.com"
+    service: http://traefik:80
+  # Catch-all (required by cloudflared)
   - service: http_status:404

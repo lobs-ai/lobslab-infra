@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy.sh — Build and deploy lobslab.com + Nexus
+# deploy.sh — Manage the lobslab-infra stack
 #
 # Usage:
-#   ./deploy.sh              # Full rebuild + restart all
-#   ./deploy.sh nexus        # Rebuild + restart Nexus only
-#   ./deploy.sh home         # Rebuild + restart lobslab.com only
-#   ./deploy.sh status       # Show status
-#   ./deploy.sh logs         # Tail logs
+#   ./deploy.sh              # Full rebuild + restart all services
+#   ./deploy.sh status       # Show running containers
+#   ./deploy.sh logs [svc]   # Tail logs (all services, or one)
+#   ./deploy.sh add <name>   # Scaffold docker-compose labels for a new service
 # =============================================================================
 
 set -euo pipefail
@@ -19,63 +18,88 @@ warn()    { echo -e "${YELLOW}▸${NC} $*"; }
 error()   { echo -e "${RED}✗${NC} $*" >&2; }
 success() { echo -e "${GREEN}✓${NC} $*"; }
 
-NEXUS_SRC="$HOME/lobs-nexus"
-HOME_SRC="$HOME/lobs-ai.github.io"
-
-# ── Build Nexus ───────────────────────────────────────────────────────────────
-build_nexus() {
-  info "Building Nexus frontend..."
-  if [[ -d "$NEXUS_SRC" ]]; then
-    cd "$NEXUS_SRC"
-    npm run build 2>&1 | tail -3
-    success "Nexus built"
-  else
-    error "Nexus source not found at $NEXUS_SRC"
-    return 1
+# ── Ensure lobslab network exists ─────────────────────────────────────────────
+ensure_network() {
+  if ! docker network inspect lobslab >/dev/null 2>&1; then
+    info "Creating lobslab Docker network..."
+    docker network create lobslab
+    success "Network 'lobslab' created"
   fi
-
-  info "Rebuilding Nexus container..."
-  cd "$(dirname "$0")"
-  docker compose build nexus 2>&1 | tail -3
-  docker compose up -d nexus 2>&1 | tail -2
-  success "Nexus deployed"
 }
 
-# ── Build lobslab.com ────────────────────────────────────────────────────────
-build_home() {
-  info "Rebuilding lobslab.com container..."
-  if [[ ! -d "$HOME_SRC" ]]; then
-    error "lobslab.com source not found at $HOME_SRC"
-    return 1
-  fi
-
-  cd "$(dirname "$0")"
-  docker compose build lobslab-home 2>&1 | tail -3
-  docker compose up -d lobslab-home 2>&1 | tail -2
-  success "lobslab.com deployed"
+# ── Full rebuild ──────────────────────────────────────────────────────────────
+deploy_all() {
+  ensure_network
+  info "Pulling latest images..."
+  docker compose pull
+  info "Starting services..."
+  docker compose up -d --remove-orphans
+  success "Stack is up"
+  echo ""
+  status
 }
 
 # ── Status ────────────────────────────────────────────────────────────────────
 status() {
   echo -e "${BOLD}lobslab Infrastructure:${NC}"
-  docker ps --filter "name=lobslab-infra" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null
+  docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Service}}"
+  echo ""
+  echo -e "${BOLD}Reachable at:${NC}"
+  echo "  https://traefik.lobslab.com  (private — Cloudflare Access)"
+  echo "  https://nexus.lobslab.com    (private — Cloudflare Access)"
 }
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs() {
   local service="${1:-}"
   if [[ -n "$service" ]]; then
-    docker compose logs -f "$service" 2>&1
+    docker compose logs -f "$service"
   else
-    docker compose logs -f 2>&1
+    docker compose logs -f
   fi
+}
+
+# ── Scaffold a new service ────────────────────────────────────────────────────
+scaffold() {
+  local name="${1:-}"
+  if [[ -z "$name" ]]; then
+    error "Usage: ./deploy.sh add <service-name>"
+    exit 1
+  fi
+
+  echo -e "${BOLD}Template for ${name}.lobslab.com:${NC}"
+  echo ""
+  cat <<EOF
+# Add to your service's docker-compose.yml (or to this stack's docker-compose.yml)
+# Then run: docker compose up -d
+
+services:
+  ${name}:
+    image: your-image-here
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${name}.rule=Host(\`${name}.lobslab.com\`)"
+      - "traefik.http.routers.${name}.entrypoints=web"
+      - "traefik.http.services.${name}.loadbalancer.server.port=3000"  # ← change to your app's port
+
+networks:
+  lobslab:
+    name: lobslab
+    external: true
+EOF
+  echo ""
+  echo -e "${YELLOW}▸${NC} If this service is PRIVATE, create a Cloudflare Access policy for ${name}.lobslab.com"
+  echo -e "${YELLOW}▸${NC} If this service is PUBLIC, no Access policy needed — Traefik routes it automatically"
+  echo -e "${YELLOW}▸${NC} Make sure the container joins the 'lobslab' network"
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 case "${1:-}" in
-  nexus)    build_nexus ;;
-  home)     build_home ;;
-  status)   status ;;
-  logs)     logs "${2:-}" ;;
-  *)        build_nexus && build_home && status ;;
+  status)  status ;;
+  logs)    logs "${2:-}" ;;
+  add)     scaffold "${2:-}" ;;
+  *)       deploy_all ;;
 esac

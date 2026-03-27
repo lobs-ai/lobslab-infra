@@ -1,19 +1,29 @@
 services:
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - lobslab
+
   cloudflared:
     image: cloudflare/cloudflared:latest
+    restart: unless-stopped
     command: tunnel --config /etc/cloudflared/config.yml run
     volumes:
       - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
       - ./tunnel-credentials.json:/etc/cloudflared/credentials.json:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
     depends_on:
-      - lobslab-home
+      - traefik
+    networks:
+      - lobslab
 
-  lobslab-home:
-    build:
-      context: /Users/lobs/lobs-ai.github.io
-    restart: unless-stopped
-
-  # Nexus is now served by lobs-core on port 9420 (not Docker)
+networks:
+  lobslab:
+    name: lobslab
+    external: true

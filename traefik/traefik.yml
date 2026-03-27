@@ -1,0 +1,27 @@
+## traefik.yml — Static configuration
+
+# Entrypoint: port 80 inside Docker (Cloudflare handles TLS)
+entryPoints:
+  web:
+    address: ":80"
+
+# Docker provider — auto-discover containers via labels
+providers:
+  docker:
+    exposedByDefault: false
+    network: lobslab
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+# API / Dashboard (routed via dynamic.yml, not exposed directly)
+api:
+  dashboard: true
+  insecure: false
+
+# Access logs
+accessLog: {}
+
+# Main log
+log:
+  level: INFO

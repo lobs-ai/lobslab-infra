@@ -1,2 +1,3 @@
 tunnel-credentials.json
 .env
+traefik/acme.json
