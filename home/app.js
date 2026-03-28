@@ -381,29 +381,14 @@ if (reqForm) {
       // Success — clear form and show confirmation
       if (reqTitleEl) reqTitleEl.value = '';
       if (reqDescEl)  reqDescEl.value = '';
-      setFeedback('✓ Request submitted — thanks!', 'success');
-
-      // Optimistically prepend the new item, then sync from server
-      const optimistic = {
-        id: data.id,
-        title,
-        description,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      };
-      const currentItems = reqList ? Array.from(reqList.querySelectorAll('.req-item')) : [];
-      if (reqEmpty) reqEmpty.classList.add('hidden');
-      if (reqList)  reqList.insertAdjacentHTML('afterbegin', renderReqItem(optimistic));
-
-      // Refresh from server after a brief delay to get authoritative data
-      setTimeout(loadRequests, 800);
+      setFeedback('✓ Submitted! We\'ll review it shortly.', 'success');
 
       // Clear success message after a few seconds
       setTimeout(() => {
         if (reqFeedback && reqFeedback.classList.contains('success')) {
           setFeedback('', '');
         }
-      }, 4000);
+      }, 5000);
 
     } catch (err) {
       console.error('Request submission error:', err);

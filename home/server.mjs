@@ -228,9 +228,11 @@ async function handler(req, res) {
   }
 
   // API: list feature requests (GET /api/requests)
+  // Only returns reviewed items (not "pending") — Rafe approves by editing the JSON
   if (pathname === "/api/requests" && req.method === "GET") {
     const all = readRequests();
-    const sorted = [...all].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const reviewed = all.filter(r => r.status !== "pending");
+    const sorted = reviewed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const pub = sorted.map(({ id, title, description, created_at, status }) =>
       ({ id, title, description, created_at, status })
     );
