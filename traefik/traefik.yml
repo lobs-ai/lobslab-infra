@@ -14,10 +14,12 @@ providers:
     filename: /etc/traefik/dynamic.yml
     watch: true
 
-# API / Dashboard (routed via dynamic.yml, not exposed directly)
+# API / Dashboard — insecure mode exposes the API on :8080 inside the Docker
+# network so lobslab-home can query it. It is NOT reachable externally —
+# cloudflared only routes to port 80 (Traefik's web entrypoint).
 api:
   dashboard: true
-  insecure: false
+  insecure: true
 
 # Access logs
 accessLog: {}

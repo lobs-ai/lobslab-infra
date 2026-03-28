@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lobs Lab</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">⚗️</span>
+          <div>
+            <h1 class="logo-title">Lobs Lab</h1>
+            <p class="logo-sub">Self-hosted services</p>
+          </div>
+        </div>
+        <div class="header-meta">
+          <span class="refresh-indicator" id="refresh-indicator" title="Auto-refreshes every 30s">
+            <span class="pulse-dot"></span>
+            Live
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div id="status-bar" class="status-bar hidden"></div>
+
+      <section class="services-section">
+        <div id="grid" class="grid">
+          <!-- Cards injected by app.js -->
+        </div>
+        <div id="empty-state" class="empty-state hidden">
+          <span class="empty-icon">🔭</span>
+          <p class="empty-title">No public services running</p>
+          <p class="empty-sub">Services will appear here once they're up and registered with Traefik.</p>
+        </div>
+        <div id="error-state" class="error-state hidden">
+          <span class="error-icon">⚠️</span>
+          <p class="error-title">Couldn't reach Traefik</p>
+          <p class="error-sub" id="error-detail">Check that Traefik is running and the API is enabled.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Powered by <a href="https://traefik.io" target="_blank" rel="noopener">Traefik</a> · Tunneled through <a href="https://cloudflare.com" target="_blank" rel="noopener">Cloudflare</a></p>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

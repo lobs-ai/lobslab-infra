@@ -23,6 +23,18 @@ services:
     networks:
       - lobslab
 
+  lobslab-home:
+    build:
+      context: ./home
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lobslab-home.rule=Host(`home.lobslab.com`)"
+      - "traefik.http.routers.lobslab-home.entrypoints=web"
+      - "traefik.http.services.lobslab-home.loadbalancer.server.port=3000"
+
 networks:
   lobslab:
     name: lobslab

@@ -1,0 +1,14 @@
+# Dependencies / tooling
+node_modules/
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.env
+*.local
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore

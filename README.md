@@ -29,6 +29,7 @@ Internet
 
 | Service | Subdomain | Access | Notes |
 |---------|-----------|--------|-------|
+| Home (landing page) | `home.lobslab.com` | **Public** | Auto-discovers public services via Traefik API |
 | Traefik dashboard | `traefik.lobslab.com` | **Private** | Cloudflare Access required |
 | Nexus (lobs-core) | `nexus.lobslab.com` | **Private** | Cloudflare Access required; routes to host port 9420 |
 
@@ -207,12 +208,18 @@ Don't create an Access policy. Traefik routes it, Cloudflare proxies it, anyone 
 
 ```
 lobslab-infra/
-├── docker-compose.yml          # Traefik + cloudflared services
+├── docker-compose.yml          # Traefik + cloudflared + lobslab-home services
 ├── cloudflared-config.yml      # Tunnel config (wildcard → Traefik)
 ├── tunnel-credentials.json     # SECRET — gitignored, never commit
 ├── traefik/
-│   ├── traefik.yml             # Static config (entrypoints, providers)
+│   ├── traefik.yml             # Static config (entrypoints, providers, API)
 │   └── dynamic.yml             # Dynamic config (host services, dashboard route)
+├── home/                       # home.lobslab.com landing page
+│   ├── Dockerfile
+│   ├── server.mjs              # Node.js server (no deps) — serves UI + /api/services
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 ├── deploy.sh                   # Manage the stack
 ├── setup.sh                    # First-time setup
 └── README.md
