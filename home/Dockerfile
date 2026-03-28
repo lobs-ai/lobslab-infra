@@ -8,6 +8,9 @@ COPY index.html ./
 COPY styles.css ./
 COPY app.js ./
 
+# Ensure data dir exists (mounted as volume in production)
+RUN mkdir -p /app/data
+
 EXPOSE 3000
 
 CMD ["node", "server.mjs"]

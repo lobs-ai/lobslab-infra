@@ -29,6 +29,8 @@ services:
     build:
       context: ./home
     restart: unless-stopped
+    volumes:
+      - home-data:/app/data
     networks:
       - lobslab
     labels:
@@ -36,6 +38,9 @@ services:
       - "traefik.http.routers.lobslab-home.rule=Host(`home.lobslab.com`)"
       - "traefik.http.routers.lobslab-home.entrypoints=web"
       - "traefik.http.services.lobslab-home.loadbalancer.server.port=3000"
+
+volumes:
+  home-data:
 
 networks:
   lobslab:
