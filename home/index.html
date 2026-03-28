@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lobs Lab</title>
   <link rel="stylesheet" href="/styles.css" />
+  <script>
+    const t = localStorage.getItem('lobslab-theme');
+    if (t === 'light') document.documentElement.dataset.theme = 'light';
+  </script>
 </head>
 <body>
   <div class="layout">
@@ -22,6 +26,9 @@
             <span class="pulse-dot"></span>
             Live
           </span>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+            <span class="theme-icon">☀️</span>
+          </button>
         </div>
       </div>
     </header>

@@ -4,6 +4,41 @@
  * Auto-refreshes every 30 seconds.
  */
 
+// ── Theme ─────────────────────────────────────────────────────────────────────
+
+(function initTheme() {
+  const toggle = document.getElementById("theme-toggle");
+  const icon = toggle?.querySelector(".theme-icon");
+
+  function getTheme() {
+    return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  }
+
+  function applyTheme(theme) {
+    if (theme === "light") {
+      document.documentElement.dataset.theme = "light";
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+    if (icon) {
+      // Show the icon of what you'll switch TO
+      icon.textContent = theme === "light" ? "🌙" : "☀️";
+    }
+    localStorage.setItem("lobslab-theme", theme);
+  }
+
+  // Set initial icon without touching storage (storage was already set by <head> script)
+  if (icon) {
+    icon.textContent = getTheme() === "light" ? "🌙" : "☀️";
+  }
+
+  toggle?.addEventListener("click", () => {
+    applyTheme(getTheme() === "light" ? "dark" : "light");
+  });
+})();
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
 const REFRESH_MS = 30_000;
 
 const grid = document.getElementById("grid");
