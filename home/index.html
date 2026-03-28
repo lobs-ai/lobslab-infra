@@ -7,55 +7,72 @@
   <link rel="stylesheet" href="/styles.css" />
   <script>
     const t = localStorage.getItem('lobslab-theme');
-    if (t === 'light') document.documentElement.dataset.theme = 'light';
+    if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
   </script>
 </head>
 <body>
   <div class="layout">
-    <header class="header">
-      <div class="header-inner">
-        <div class="logo">
-          <span class="logo-icon">⚗️</span>
-          <div>
-            <h1 class="logo-title">Lobs Lab</h1>
-            <p class="logo-sub">Self-hosted services</p>
-          </div>
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero-content">
+        <div class="hero-top">
+          <span class="hero-icon">⚗️</span>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">☀️</button>
         </div>
-        <div class="header-meta">
-          <span class="refresh-indicator" id="refresh-indicator" title="Auto-refreshes every 30s">
+        <h1 class="hero-title">Lobs Lab</h1>
+        <p class="hero-sub">Self-hosted services running on <span class="hero-domain">lobslab.com</span></p>
+        <div class="hero-stats" id="hero-stats">
+          <span class="hero-stat-pill loading">
             <span class="pulse-dot"></span>
-            Live
+            loading…
           </span>
-          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-            <span class="theme-icon">☀️</span>
-          </button>
         </div>
       </div>
     </header>
 
-    <main class="main">
-      <div id="status-bar" class="status-bar hidden"></div>
+    <!-- Gradient divider -->
+    <div class="divider"></div>
 
-      <section class="services-section">
-        <div id="grid" class="grid">
-          <!-- Cards injected by app.js -->
-        </div>
-        <div id="empty-state" class="empty-state hidden">
-          <span class="empty-icon">🔭</span>
-          <p class="empty-title">No public services running</p>
-          <p class="empty-sub">Services will appear here once they're up and registered with Traefik.</p>
-        </div>
-        <div id="error-state" class="error-state hidden">
-          <span class="error-icon">⚠️</span>
-          <p class="error-title">Couldn't reach Traefik</p>
-          <p class="error-sub" id="error-detail">Check that Traefik is running and the API is enabled.</p>
-        </div>
-      </section>
+    <!-- Services -->
+    <main class="main">
+      <h2 class="section-title">Services</h2>
+      <div id="grid" class="grid">
+        <!-- Cards injected by app.js -->
+      </div>
+      <div id="empty-state" class="empty-state hidden">
+        <span class="empty-icon">🔭</span>
+        <p class="empty-title">No public services running</p>
+        <p class="empty-sub">Services will appear here once they're up and registered with Traefik.</p>
+      </div>
+      <div id="error-state" class="error-state hidden">
+        <span class="error-icon">⚠️</span>
+        <p class="error-title">Couldn't reach Traefik</p>
+        <p class="error-sub" id="error-detail">Check that Traefik is running and the API is enabled.</p>
+      </div>
     </main>
 
+    <!-- Identity -->
+    <section class="identity-section">
+      <h3 class="section-title section-title-sm">Your Identity</h3>
+      <div class="identity-card">
+        <div class="identity-row">
+          <span class="identity-label">lobslab_id</span>
+          <div class="identity-value-row">
+            <code class="identity-value" id="identity-value">loading…</code>
+            <button class="copy-btn" id="copy-id-btn" title="Copy to clipboard" aria-label="Copy ID">📋</button>
+          </div>
+        </div>
+        <p class="identity-note">This cookie identifies you across all *.lobslab.com services</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
     <footer class="footer">
       <p>Powered by <a href="https://traefik.io" target="_blank" rel="noopener">Traefik</a> · Tunneled through <a href="https://cloudflare.com" target="_blank" rel="noopener">Cloudflare</a></p>
+      <p class="footer-meta" id="footer-meta">Last updated just now</p>
     </footer>
+
   </div>
 
   <script src="/app.js"></script>
