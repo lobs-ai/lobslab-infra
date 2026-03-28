@@ -109,11 +109,50 @@ function serveStatic(res, filePath) {
   });
 }
 
+// ── Cookie helpers ────────────────────────────────────────────────────────────
+
+const COOKIE_NAME = "lobslab_id";
+const COOKIE_DOMAIN = ".lobslab.com";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 2; // 2 years
+
+function parseCookies(header) {
+  const cookies = {};
+  if (!header) return cookies;
+  for (const pair of header.split(";")) {
+    const [key, ...rest] = pair.trim().split("=");
+    if (key) cookies[key.trim()] = rest.join("=").trim();
+  }
+  return cookies;
+}
+
+function generateId() {
+  // UUID v4 without dependencies
+  const hex = [...Array(32)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20)}`;
+}
+
+/** Ensures lobslab_id cookie exists. Returns the id and any Set-Cookie header needed. */
+function ensureCookie(req) {
+  const cookies = parseCookies(req.headers.cookie);
+  const existing = cookies[COOKIE_NAME];
+  if (existing) return { id: existing, header: null };
+
+  const id = generateId();
+  const header = `${COOKIE_NAME}=${id}; Domain=${COOKIE_DOMAIN}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+  return { id, header };
+}
+
 // ── Request handler ───────────────────────────────────────────────────────────
 
 async function handler(req, res) {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = url.pathname;
+
+  // Set cookie on every response if needed
+  const { header: cookieHeader } = ensureCookie(req);
+  if (cookieHeader) {
+    res.setHeader("Set-Cookie", cookieHeader);
+  }
 
   // API endpoint
   if (pathname === "/api/services") {
