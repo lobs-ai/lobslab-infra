@@ -238,8 +238,185 @@ async function loadServices(isInitial = false) {
   }
 }
 
+// ── Feature Requests ──────────────────────────────────────────────────────────
+
+const reqList     = document.getElementById('req-list');
+const reqEmpty    = document.getElementById('req-empty');
+const reqForm     = document.getElementById('req-form');
+const reqTitleEl  = document.getElementById('req-title');
+const reqDescEl   = document.getElementById('req-desc');
+const reqSubmitBtn = document.getElementById('req-submit-btn');
+const reqFeedback = document.getElementById('req-form-feedback');
+
+const REQ_STATUS_LABELS = {
+  pending:  'pending',
+  planned:  'planned',
+  building: 'building',
+  done:     'done',
+  wontdo:   "won't do",
+};
+
+/**
+ * Format a date string as a relative time label: "just now", "3 hours ago", etc.
+ */
+function relativeTime(isoString) {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const secs  = Math.floor(diff / 1000);
+  const mins  = Math.floor(secs / 60);
+  const hours = Math.floor(mins / 60);
+  const days  = Math.floor(hours / 24);
+
+  if (secs < 60)   return 'just now';
+  if (mins < 60)   return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
+  if (hours < 24)  return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  if (days < 30)   return `${days} day${days !== 1 ? 's' : ''} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`;
+  const years = Math.floor(days / 365);
+  return `${years} year${years !== 1 ? 's' : ''} ago`;
+}
+
+function renderReqItem(req) {
+  const status  = req.status ?? 'pending';
+  const label   = REQ_STATUS_LABELS[status] ?? status;
+  const desc    = req.description
+    ? `<p class="req-item-desc">${escapeHtml(req.description)}</p>`
+    : '';
+  const time    = relativeTime(req.created_at);
+
+  return `
+    <div class="req-item" data-id="${escapeHtml(req.id)}">
+      <div class="req-item-body">
+        <div class="req-item-header">
+          <span class="req-item-title">${escapeHtml(req.title)}</span>
+          <span class="req-badge ${escapeHtml(status)}">${escapeHtml(label)}</span>
+        </div>
+        ${desc}
+        <p class="req-item-meta">${time}</p>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderReqList(requests) {
+  if (!reqList || !reqEmpty) return;
+
+  if (requests.length === 0) {
+    reqList.innerHTML = '';
+    reqEmpty.classList.remove('hidden');
+    return;
+  }
+
+  reqEmpty.classList.add('hidden');
+  reqList.innerHTML = requests.map(renderReqItem).join('');
+}
+
+function setFeedback(msg, type) {
+  if (!reqFeedback) return;
+  reqFeedback.textContent = msg;
+  reqFeedback.className = 'req-form-feedback' + (type ? ` ${type}` : '');
+}
+
+async function loadRequests() {
+  try {
+    const res = await fetch('/api/requests');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderReqList(data);
+  } catch (err) {
+    console.error('Failed to load feature requests:', err);
+  }
+}
+
+if (reqForm) {
+  reqForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = reqTitleEl ? reqTitleEl.value.trim() : '';
+    const description = reqDescEl ? reqDescEl.value.trim() : '';
+
+    if (!title) {
+      setFeedback('Please enter a title for your request.', 'error');
+      reqTitleEl && reqTitleEl.focus();
+      return;
+    }
+    if (title.length > 100) {
+      setFeedback('Title must be 100 characters or fewer.', 'error');
+      reqTitleEl && reqTitleEl.focus();
+      return;
+    }
+    if (description.length > 500) {
+      setFeedback('Description must be 500 characters or fewer.', 'error');
+      reqDescEl && reqDescEl.focus();
+      return;
+    }
+
+    // Optimistic UI: disable form while submitting
+    if (reqSubmitBtn) reqSubmitBtn.disabled = true;
+    setFeedback('Submitting…', '');
+
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setFeedback(data.error ?? 'Submission failed — try again.', 'error');
+        return;
+      }
+
+      // Success — clear form and show confirmation
+      if (reqTitleEl) reqTitleEl.value = '';
+      if (reqDescEl)  reqDescEl.value = '';
+      setFeedback('✓ Request submitted — thanks!', 'success');
+
+      // Optimistically prepend the new item, then sync from server
+      const optimistic = {
+        id: data.id,
+        title,
+        description,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      };
+      const currentItems = reqList ? Array.from(reqList.querySelectorAll('.req-item')) : [];
+      if (reqEmpty) reqEmpty.classList.add('hidden');
+      if (reqList)  reqList.insertAdjacentHTML('afterbegin', renderReqItem(optimistic));
+
+      // Refresh from server after a brief delay to get authoritative data
+      setTimeout(loadRequests, 800);
+
+      // Clear success message after a few seconds
+      setTimeout(() => {
+        if (reqFeedback && reqFeedback.classList.contains('success')) {
+          setFeedback('', '');
+        }
+      }, 4000);
+
+    } catch (err) {
+      console.error('Request submission error:', err);
+      setFeedback('Network error — please try again.', 'error');
+    } finally {
+      if (reqSubmitBtn) reqSubmitBtn.disabled = false;
+    }
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 loadServices(true);
 loadIdentity();
+loadRequests();
 setInterval(() => loadServices(false), REFRESH_MS);

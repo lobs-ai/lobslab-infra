@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ?? 3000;
 const TRAEFIK_API = process.env.TRAEFIK_API ?? "http://traefik:8080";
+const REQUESTS_FILE = path.join(__dirname, "data", "requests.json");
 
 // Hostnames that should never appear on the home page
 const PRIVATE_HOSTS = new Set([
@@ -145,6 +146,53 @@ function ensureCookie(req) {
   return { id, header };
 }
 
+// ── Feature requests storage ──────────────────────────────────────────────────
+
+function readRequests() {
+  try {
+    const raw = fs.readFileSync(REQUESTS_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function writeRequests(data) {
+  fs.mkdirSync(path.dirname(REQUESTS_FILE), { recursive: true });
+  fs.writeFileSync(REQUESTS_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+function shortId() {
+  return [...Array(6)].map(() => Math.floor(Math.random() * 36).toString(36)).join('');
+}
+
+// In-memory rate-limit tracker: { lobslab_id → [timestamps] }
+const rateLimitMap = new Map();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(lobslabId) {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const timestamps = (rateLimitMap.get(lobslabId) ?? []).filter(t => t > cutoff);
+  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  timestamps.push(now);
+  rateLimitMap.set(lobslabId, timestamps);
+  return true;
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", chunk => (body += chunk));
+    req.on("end", () => {
+      try { resolve(JSON.parse(body)); }
+      catch { reject(new Error("Invalid JSON")); }
+    });
+    req.on("error", reject);
+  });
+}
+
 // ── Request handler ───────────────────────────────────────────────────────────
 
 async function handler(req, res) {
@@ -176,6 +224,75 @@ async function handler(req, res) {
       res.writeHead(502, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Could not reach Traefik API", detail: err.message }));
     }
+    return;
+  }
+
+  // API: list feature requests (GET /api/requests)
+  if (pathname === "/api/requests" && req.method === "GET") {
+    const all = readRequests();
+    const sorted = [...all].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const pub = sorted.map(({ id, title, description, created_at, status }) =>
+      ({ id, title, description, created_at, status })
+    );
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(pub));
+    return;
+  }
+
+  // API: submit feature request (POST /api/requests)
+  if (pathname === "/api/requests" && req.method === "POST") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON body" }));
+      return;
+    }
+
+    const title = (body.title ?? "").trim();
+    const description = (body.description ?? "").trim();
+
+    if (!title || title.length > 100) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "title is required and must be 1–100 characters" }));
+      return;
+    }
+    if (description.length > 500) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "description must be 500 characters or fewer" }));
+      return;
+    }
+
+    const { id: lobslab_id } = ensureCookie(req);
+    if (!checkRateLimit(lobslab_id)) {
+      res.writeHead(429, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Too many submissions — try again later" }));
+      return;
+    }
+
+    const entry = {
+      id: shortId(),
+      title,
+      description,
+      lobslab_id,
+      status: "pending",
+      created_at: new Date().toISOString(),
+    };
+
+    const all = readRequests();
+    all.push(entry);
+    try {
+      writeRequests(all);
+    } catch (err) {
+      console.error("Failed to write requests.json:", err.message);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Failed to save request" }));
+      return;
+    }
+
+    res.writeHead(201, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, id: entry.id }));
     return;
   }
 

@@ -726,3 +726,290 @@ a:hover {
     gap: 8px;
   }
 }
+
+/* ── Feature Requests section ─────────────────────────────────────────────── */
+
+.requests-section {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px 44px;
+}
+
+/* ── Request form card ─────────────────────────────────────────────────────── */
+
+.req-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px 16px;
+  margin-bottom: 20px;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.req-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.req-form-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.req-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  font-size: 0.9rem;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  min-width: 0;
+}
+
+.req-input::placeholder {
+  color: var(--text-muted);
+}
+
+.req-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.req-textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  font-size: 0.875rem;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  width: 100%;
+}
+
+.req-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.req-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.req-submit-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+  line-height: 1;
+}
+
+.req-submit-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.req-submit-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.req-submit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.req-form-feedback {
+  font-size: 0.8125rem;
+  min-height: 1.2em;
+  transition: color var(--transition);
+}
+
+.req-form-feedback.success {
+  color: var(--green);
+}
+
+.req-form-feedback.error {
+  color: var(--red);
+}
+
+/* ── Request list ──────────────────────────────────────────────────────────── */
+
+.req-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.req-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.req-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.req-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.req-item-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.req-item-desc {
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.req-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* ── Request status badges ─────────────────────────────────────────────────── */
+
+.req-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* pending — amber/yellow */
+.req-badge.pending {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+[data-theme="light"] .req-badge.pending {
+  background: rgba(217, 119, 6, 0.08);
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+/* planned — blue */
+.req-badge.planned {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+[data-theme="light"] .req-badge.planned {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+/* building — accent/purple */
+.req-badge.building {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+}
+
+/* done — green */
+.req-badge.done {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="light"] .req-badge.done {
+  border-color: rgba(5, 150, 105, 0.2);
+}
+
+/* wontdo — muted with strikethrough title */
+.req-badge.wontdo {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.req-item:has(.req-badge.wontdo) .req-item-title {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+/* ── Request empty state ───────────────────────────────────────────────────── */
+
+.req-empty {
+  text-align: center;
+  padding: 44px 24px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.req-empty-icon {
+  font-size: 2rem;
+}
+
+/* ── Responsive adjustments for requests ───────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .requests-section {
+    padding: 0 16px 32px;
+  }
+
+  .req-form-row {
+    flex-direction: column;
+  }
+
+  .req-submit-btn {
+    width: 100%;
+    padding: 11px;
+  }
+
+  .req-item {
+    padding: 12px 14px;
+  }
+}

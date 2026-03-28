@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lobs Lab</title>
-  <link rel="stylesheet" href="/styles.css?v=2" />
+  <link rel="stylesheet" href="/styles.css?v=3" />
   <script>
     const t = localStorage.getItem('lobslab-theme');
     if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
@@ -52,6 +52,46 @@
       </div>
     </main>
 
+    <!-- Feature Requests -->
+    <section class="requests-section">
+      <h2 class="section-title">Feature Requests</h2>
+
+      <!-- Submit form -->
+      <div class="req-form-card" id="req-form-card">
+        <form id="req-form" class="req-form" novalidate>
+          <div class="req-form-row">
+            <input
+              type="text"
+              id="req-title"
+              class="req-input"
+              placeholder="Suggest a new service or feature…"
+              maxlength="100"
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="req-submit-btn" id="req-submit-btn">Submit</button>
+          </div>
+          <textarea
+            id="req-desc"
+            class="req-textarea"
+            placeholder="Optional: add more detail (up to 500 chars)"
+            maxlength="500"
+            rows="2"
+          ></textarea>
+          <div class="req-form-feedback" id="req-form-feedback" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <!-- Request list -->
+      <div id="req-list" class="req-list">
+        <!-- Injected by app.js -->
+      </div>
+      <div id="req-empty" class="req-empty hidden">
+        <span class="req-empty-icon">💡</span>
+        <p>No requests yet — be the first to suggest something!</p>
+      </div>
+    </section>
+
     <!-- Identity -->
     <section class="identity-section">
       <h3 class="section-title section-title-sm">Your Identity</h3>
@@ -75,6 +115,6 @@
 
   </div>
 
-  <script src="/app.js?v=2"></script>
+  <script src="/app.js?v=3"></script>
 </body>
 </html>
