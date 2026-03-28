@@ -154,6 +154,14 @@ async function handler(req, res) {
     res.setHeader("Set-Cookie", cookieHeader);
   }
 
+  // API: identity
+  if (pathname === "/api/me") {
+    const { id } = ensureCookie(req);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ lobslab_id: id }));
+    return;
+  }
+
   // API endpoint
   if (pathname === "/api/services") {
     try {
