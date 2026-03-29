@@ -141,6 +141,9 @@ function renderServices(services) {
 
   const allHealthy = services.every(s => s.status === 'enabled');
   setHeroStats(services.length, allHealthy);
+
+  // Populate the project dropdown from discovered services
+  populateProjectDropdown(services);
 }
 
 function setHeroStats(count, allHealthy) {
@@ -245,6 +248,8 @@ const reqEmpty    = document.getElementById('req-empty');
 const reqForm     = document.getElementById('req-form');
 const reqTitleEl  = document.getElementById('req-title');
 const reqDescEl   = document.getElementById('req-desc');
+const reqTypeEl   = document.getElementById('req-type');
+const reqProjectEl = document.getElementById('req-project');
 const reqSubmitBtn = document.getElementById('req-submit-btn');
 const reqFeedback = document.getElementById('req-form-feedback');
 
@@ -255,6 +260,34 @@ const REQ_STATUS_LABELS = {
   done:     'done',
   wontdo:   "won't do",
 };
+
+const REQ_TYPE_LABELS = {
+  feature: '💡 Feature',
+  bug:     '🐛 Bug',
+};
+
+/** Populate the project dropdown from discovered services */
+function populateProjectDropdown(services) {
+  if (!reqProjectEl) return;
+  // Keep the first "All / New idea" option
+  while (reqProjectEl.options.length > 1) reqProjectEl.remove(1);
+  for (const svc of services) {
+    const name = formatName(svc.name);
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    reqProjectEl.appendChild(opt);
+  }
+}
+
+// Update input placeholder based on type
+if (reqTypeEl && reqTitleEl) {
+  reqTypeEl.addEventListener('change', () => {
+    reqTitleEl.placeholder = reqTypeEl.value === 'bug'
+      ? 'Describe the bug…'
+      : 'Suggest a new service or feature…';
+  });
+}
 
 /**
  * Format a date string as a relative time label: "just now", "3 hours ago", etc.
@@ -283,6 +316,10 @@ function renderReqItem(req) {
     ? `<p class="req-item-desc">${escapeHtml(req.description)}</p>`
     : '';
   const time    = relativeTime(req.created_at);
+  const typeLabel = REQ_TYPE_LABELS[req.type] ?? '💡 Feature';
+  const projectTag = req.project
+    ? `<span class="req-tag req-tag-project">${escapeHtml(req.project)}</span>`
+    : '';
 
   return `
     <div class="req-item" data-id="${escapeHtml(req.id)}">
@@ -290,6 +327,10 @@ function renderReqItem(req) {
         <div class="req-item-header">
           <span class="req-item-title">${escapeHtml(req.title)}</span>
           <span class="req-badge ${escapeHtml(status)}">${escapeHtml(label)}</span>
+        </div>
+        <div class="req-item-tags">
+          <span class="req-tag req-tag-type">${typeLabel}</span>
+          ${projectTag}
         </div>
         ${desc}
         <p class="req-item-meta">${time}</p>
@@ -343,6 +384,8 @@ if (reqForm) {
 
     const title = reqTitleEl ? reqTitleEl.value.trim() : '';
     const description = reqDescEl ? reqDescEl.value.trim() : '';
+    const type = reqTypeEl ? reqTypeEl.value : 'feature';
+    const project = reqProjectEl ? reqProjectEl.value : '';
 
     if (!title) {
       setFeedback('Please enter a title for your request.', 'error');
@@ -365,10 +408,13 @@ if (reqForm) {
     setFeedback('Submitting…', '');
 
     try {
+      const payload = { title, description, type };
+      if (project) payload.project = project;
+
       const res = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -381,6 +427,9 @@ if (reqForm) {
       // Success — clear form and show confirmation
       if (reqTitleEl) reqTitleEl.value = '';
       if (reqDescEl)  reqDescEl.value = '';
+      if (reqTypeEl)  reqTypeEl.value = 'feature';
+      if (reqProjectEl) reqProjectEl.value = '';
+      if (reqTitleEl) reqTitleEl.placeholder = 'Suggest a new service or feature…';
       setFeedback('✓ Submitted! We\'ll review it shortly.', 'success');
 
       // Clear success message after a few seconds

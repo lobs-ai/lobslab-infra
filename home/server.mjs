@@ -14,6 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ?? 3000;
 const TRAEFIK_API = process.env.TRAEFIK_API ?? "http://traefik:8080";
 const REQUESTS_FILE = path.join(__dirname, "data", "requests.json");
+const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
 // Hostnames that should never appear on the home page
 const PRIVATE_HOSTS = new Set([
@@ -231,10 +232,10 @@ async function handler(req, res) {
   // Only returns reviewed items (not "pending") — Rafe approves by editing the JSON
   if (pathname === "/api/requests" && req.method === "GET") {
     const all = readRequests();
-    const reviewed = all.filter(r => r.status !== "pending");
+    const reviewed = all.filter(r => r.status !== "pending" && r.status !== "wontdo");
     const sorted = reviewed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const pub = sorted.map(({ id, title, description, created_at, status }) =>
-      ({ id, title, description, created_at, status })
+    const pub = sorted.map(({ id, title, description, type, project, created_at, status }) =>
+      ({ id, title, description, type: type ?? 'feature', project: project ?? null, created_at, status })
     );
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(pub));
@@ -254,6 +255,8 @@ async function handler(req, res) {
 
     const title = (body.title ?? "").trim();
     const description = (body.description ?? "").trim();
+    const type = ["feature", "bug"].includes(body.type) ? body.type : "feature";
+    const project = (body.project ?? "").trim().slice(0, 50);
 
     if (!title || title.length > 100) {
       res.writeHead(400, { "Content-Type": "application/json" });
@@ -277,6 +280,8 @@ async function handler(req, res) {
       id: shortId(),
       title,
       description,
+      type,
+      project: project || null,
       lobslab_id,
       status: "pending",
       created_at: new Date().toISOString(),
@@ -295,6 +300,63 @@ async function handler(req, res) {
 
     res.writeHead(201, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, id: entry.id }));
+    return;
+  }
+
+  // ── Admin API (token-protected) ──────────────────────────────────────────────
+
+  const isAdmin = ADMIN_SECRET && req.headers["x-admin-secret"] === ADMIN_SECRET;
+
+  // Admin: list ALL requests including pending (GET /api/admin/requests)
+  if (pathname === "/api/admin/requests" && req.method === "GET") {
+    if (!isAdmin) { res.writeHead(401, { "Content-Type": "application/json" }); res.end('{"error":"Unauthorized"}'); return; }
+    const all = readRequests();
+    const sorted = all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(sorted));
+    return;
+  }
+
+  // Admin: update request status (PATCH /api/admin/requests/:id)
+  if (pathname.startsWith("/api/admin/requests/") && req.method === "PATCH") {
+    if (!isAdmin) { res.writeHead(401, { "Content-Type": "application/json" }); res.end('{"error":"Unauthorized"}'); return; }
+    const reqId = pathname.split("/").pop();
+    let body;
+    try { body = await readBody(req); } catch {
+      res.writeHead(400, { "Content-Type": "application/json" }); res.end('{"error":"Invalid JSON"}'); return;
+    }
+    const validStatuses = ["pending", "planned", "building", "done", "wontdo"];
+    if (!body.status || !validStatuses.includes(body.status)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: `status must be one of: ${validStatuses.join(", ")}` }));
+      return;
+    }
+    const all = readRequests();
+    const idx = all.findIndex(r => r.id === reqId);
+    if (idx === -1) { res.writeHead(404, { "Content-Type": "application/json" }); res.end('{"error":"Not found"}'); return; }
+    all[idx].status = body.status;
+    all[idx].updated_at = new Date().toISOString();
+    try { writeRequests(all); } catch {
+      res.writeHead(500, { "Content-Type": "application/json" }); res.end('{"error":"Write failed"}'); return;
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(all[idx]));
+    return;
+  }
+
+  // Admin: delete request (DELETE /api/admin/requests/:id)
+  if (pathname.startsWith("/api/admin/requests/") && req.method === "DELETE") {
+    if (!isAdmin) { res.writeHead(401, { "Content-Type": "application/json" }); res.end('{"error":"Unauthorized"}'); return; }
+    const reqId = pathname.split("/").pop();
+    const all = readRequests();
+    const idx = all.findIndex(r => r.id === reqId);
+    if (idx === -1) { res.writeHead(404, { "Content-Type": "application/json" }); res.end('{"error":"Not found"}'); return; }
+    const removed = all.splice(idx, 1)[0];
+    try { writeRequests(all); } catch {
+      res.writeHead(500, { "Content-Type": "application/json" }); res.end('{"error":"Write failed"}'); return;
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, deleted: removed.id }));
     return;
   }
 

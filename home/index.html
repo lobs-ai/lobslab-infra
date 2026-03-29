@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lobs Lab</title>
-  <link rel="stylesheet" href="/styles.css?v=4" />
+  <link rel="stylesheet" href="/styles.css?v=5" />
   <script>
     const t = localStorage.getItem('lobslab-theme');
     if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
@@ -59,6 +59,16 @@
       <!-- Submit form -->
       <div class="req-form-card" id="req-form-card">
         <form id="req-form" class="req-form" novalidate>
+          <div class="req-form-selects">
+            <select id="req-type" class="req-select">
+              <option value="feature">💡 Feature</option>
+              <option value="bug">🐛 Bug</option>
+            </select>
+            <select id="req-project" class="req-select">
+              <option value="">All / New idea</option>
+              <!-- Populated dynamically from services -->
+            </select>
+          </div>
           <div class="req-form-row">
             <input
               type="text"
@@ -115,6 +125,6 @@
 
   </div>
 
-  <script src="/app.js?v=4"></script>
+  <script src="/app.js?v=5"></script>
 </body>
 </html>

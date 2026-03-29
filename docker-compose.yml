@@ -29,6 +29,10 @@ services:
     build:
       context: ./home
     restart: unless-stopped
+    environment:
+      - ADMIN_SECRET=cc39f69052f16497650e05822933620b539c5912b2cc5ded
+    ports:
+      - "127.0.0.1:3100:3000"
     volumes:
       - home-data:/app/data
     networks:
