@@ -38,12 +38,12 @@
 
 const REFRESH_MS = 30_000;
 
-const grid       = document.getElementById('grid');
-const emptyState = document.getElementById('empty-state');
-const errorState = document.getElementById('error-state');
+const grid        = document.getElementById('grid');
+const emptyState  = document.getElementById('empty-state');
+const errorState  = document.getElementById('error-state');
 const errorDetail = document.getElementById('error-detail');
-const heroStats  = document.getElementById('hero-stats');
-const footerMeta = document.getElementById('footer-meta');
+const heroStats   = document.getElementById('hero-stats');
+const footerMeta  = document.getElementById('footer-meta');
 
 // ── Service icons ─────────────────────────────────────────────────────────────
 
@@ -241,17 +241,45 @@ async function loadServices(isInitial = false) {
   }
 }
 
+// ── Tab navigation ────────────────────────────────────────────────────────────
+
+(function initTabs() {
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  function activateTab(targetTab) {
+    tabBtns.forEach(btn => {
+      const isActive = btn.dataset.tab === targetTab;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    tabPanels.forEach(panel => {
+      const isActive = panel.id === `panel-${targetTab}`;
+      panel.classList.toggle('hidden', !isActive);
+    });
+  }
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activateTab(btn.dataset.tab);
+      if (btn.dataset.tab === 'changelog') {
+        loadChangelog();
+      }
+    });
+  });
+})();
+
 // ── Feature Requests ──────────────────────────────────────────────────────────
 
-const reqList     = document.getElementById('req-list');
-const reqEmpty    = document.getElementById('req-empty');
-const reqForm     = document.getElementById('req-form');
-const reqTitleEl  = document.getElementById('req-title');
-const reqDescEl   = document.getElementById('req-desc');
-const reqTypeEl   = document.getElementById('req-type');
+const reqList      = document.getElementById('req-list');
+const reqEmpty     = document.getElementById('req-empty');
+const reqForm      = document.getElementById('req-form');
+const reqTitleEl   = document.getElementById('req-title');
+const reqDescEl    = document.getElementById('req-desc');
+const reqTypeEl    = document.getElementById('req-type');
 const reqProjectEl = document.getElementById('req-project');
 const reqSubmitBtn = document.getElementById('req-submit-btn');
-const reqFeedback = document.getElementById('req-form-feedback');
+const reqFeedback  = document.getElementById('req-form-feedback');
 
 const REQ_STATUS_LABELS = {
   pending:  'pending',
@@ -310,23 +338,30 @@ function relativeTime(isoString) {
 }
 
 function renderReqItem(req) {
-  const status  = req.status ?? 'pending';
-  const label   = REQ_STATUS_LABELS[status] ?? status;
-  const desc    = req.description
+  const status    = req.status ?? 'pending';
+  const label     = REQ_STATUS_LABELS[status] ?? status;
+  const desc      = req.description
     ? `<p class="req-item-desc">${escapeHtml(req.description)}</p>`
     : '';
-  const time    = relativeTime(req.created_at);
+  const time      = relativeTime(req.created_at);
   const typeLabel = REQ_TYPE_LABELS[req.type] ?? '💡 Feature';
   const projectTag = req.project
     ? `<span class="req-tag req-tag-project">${escapeHtml(req.project)}</span>`
     : '';
+  // "Shipped" indicator for done items
+  const shippedIndicator = status === 'done'
+    ? `<span class="req-shipped-badge">✅ shipped</span>`
+    : '';
 
   return `
-    <div class="req-item" data-id="${escapeHtml(req.id)}">
+    <div class="req-item${status === 'done' ? ' req-item-done' : ''}" data-id="${escapeHtml(req.id)}">
       <div class="req-item-body">
         <div class="req-item-header">
           <span class="req-item-title">${escapeHtml(req.title)}</span>
-          <span class="req-badge ${escapeHtml(status)}">${escapeHtml(label)}</span>
+          <div class="req-item-badges">
+            ${shippedIndicator}
+            <span class="req-badge ${escapeHtml(status)}">${escapeHtml(label)}</span>
+          </div>
         </div>
         <div class="req-item-tags">
           <span class="req-tag req-tag-type">${typeLabel}</span>
@@ -382,10 +417,10 @@ if (reqForm) {
   reqForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const title = reqTitleEl ? reqTitleEl.value.trim() : '';
-    const description = reqDescEl ? reqDescEl.value.trim() : '';
-    const type = reqTypeEl ? reqTypeEl.value : 'feature';
-    const project = reqProjectEl ? reqProjectEl.value : '';
+    const title       = reqTitleEl   ? reqTitleEl.value.trim()   : '';
+    const description = reqDescEl    ? reqDescEl.value.trim()    : '';
+    const type        = reqTypeEl    ? reqTypeEl.value           : 'feature';
+    const project     = reqProjectEl ? reqProjectEl.value        : '';
 
     if (!title) {
       setFeedback('Please enter a title for your request.', 'error');
@@ -425,12 +460,12 @@ if (reqForm) {
       }
 
       // Success — clear form and show confirmation
-      if (reqTitleEl) reqTitleEl.value = '';
-      if (reqDescEl)  reqDescEl.value = '';
-      if (reqTypeEl)  reqTypeEl.value = 'feature';
+      if (reqTitleEl)   reqTitleEl.value = '';
+      if (reqDescEl)    reqDescEl.value = '';
+      if (reqTypeEl)    reqTypeEl.value = 'feature';
       if (reqProjectEl) reqProjectEl.value = '';
-      if (reqTitleEl) reqTitleEl.placeholder = 'Suggest a new service or feature…';
-      setFeedback('✓ Submitted! We\'ll review it shortly.', 'success');
+      if (reqTitleEl)   reqTitleEl.placeholder = 'Suggest a new service or feature…';
+      setFeedback("✓ Submitted! We'll review it shortly.", 'success');
 
       // Clear success message after a few seconds
       setTimeout(() => {
@@ -446,6 +481,78 @@ if (reqForm) {
       if (reqSubmitBtn) reqSubmitBtn.disabled = false;
     }
   });
+}
+
+// ── Changelog ─────────────────────────────────────────────────────────────────
+
+const changelogList  = document.getElementById('changelog-list');
+const changelogEmpty = document.getElementById('changelog-empty');
+
+const CL_TYPE_LABELS = {
+  feature:     '💡 Feature',
+  bug:         '🐛 Bug fix',
+  improvement: '✨ Improvement',
+  refactor:    '🔧 Refactor',
+  other:       '📦 Other',
+};
+
+function renderChangelogItem(entry) {
+  const typeLabel  = CL_TYPE_LABELS[entry.type] ?? '📦 Other';
+  const time       = relativeTime(entry.completed_at);
+  const desc       = entry.description
+    ? `<p class="cl-item-desc">${escapeHtml(entry.description)}</p>`
+    : '';
+  const projectTag = entry.project
+    ? `<span class="req-tag req-tag-project">${escapeHtml(entry.project)}</span>`
+    : '';
+
+  return `
+    <div class="cl-item">
+      <div class="cl-dot-col">
+        <span class="cl-dot"></span>
+        <span class="cl-line"></span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-header">
+          <span class="cl-title">${escapeHtml(entry.title)}</span>
+        </div>
+        <div class="cl-tags">
+          <span class="req-tag req-tag-type">${typeLabel}</span>
+          ${projectTag}
+        </div>
+        ${desc}
+        <p class="cl-meta">${time}</p>
+      </div>
+    </div>
+  `;
+}
+
+let changelogLoaded = false;
+
+async function loadChangelog() {
+  if (!changelogList || !changelogEmpty) return;
+
+  try {
+    const res = await fetch('/api/changelog');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    changelogLoaded = true;
+
+    if (data.length === 0) {
+      changelogList.innerHTML = '';
+      changelogEmpty.classList.remove('hidden');
+      return;
+    }
+
+    changelogEmpty.classList.add('hidden');
+    changelogList.innerHTML = data.map(renderChangelogItem).join('');
+  } catch (err) {
+    console.error('Failed to load changelog:', err);
+    if (changelogList) {
+      changelogList.innerHTML = `<p class="cl-error">Couldn't load changelog — try again later.</p>`;
+    }
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

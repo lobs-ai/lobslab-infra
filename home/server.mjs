@@ -14,6 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ?? 3000;
 const TRAEFIK_API = process.env.TRAEFIK_API ?? "http://traefik:8080";
 const REQUESTS_FILE = path.join(__dirname, "data", "requests.json");
+const CHANGELOG_FILE = path.join(__dirname, "data", "changelog.json");
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
 // Hostnames that should never appear on the home page
@@ -163,6 +164,22 @@ function writeRequests(data) {
   fs.writeFileSync(REQUESTS_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
+// ── Changelog storage ─────────────────────────────────────────────────────────
+
+function readChangelog() {
+  try {
+    const raw = fs.readFileSync(CHANGELOG_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function writeChangelog(data) {
+  fs.mkdirSync(path.dirname(CHANGELOG_FILE), { recursive: true });
+  fs.writeFileSync(CHANGELOG_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
 function shortId() {
   return [...Array(6)].map(() => Math.floor(Math.random() * 36).toString(36)).join('');
 }
@@ -229,7 +246,7 @@ async function handler(req, res) {
   }
 
   // API: list feature requests (GET /api/requests)
-  // Only returns reviewed items (not "pending") — Rafe approves by editing the JSON
+  // Only returns reviewed items (not "pending", not "wontdo") — Rafe approves by editing the JSON
   if (pathname === "/api/requests" && req.method === "GET") {
     const all = readRequests();
     const reviewed = all.filter(r => r.status !== "pending" && r.status !== "wontdo");
@@ -303,6 +320,15 @@ async function handler(req, res) {
     return;
   }
 
+  // API: list changelog (GET /api/changelog) — public, newest-first
+  if (pathname === "/api/changelog" && req.method === "GET") {
+    const all = readChangelog();
+    const sorted = all.slice().sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(sorted));
+    return;
+  }
+
   // ── Admin API (token-protected) ──────────────────────────────────────────────
 
   const isAdmin = ADMIN_SECRET && req.headers["x-admin-secret"] === ADMIN_SECRET;
@@ -334,8 +360,34 @@ async function handler(req, res) {
     const all = readRequests();
     const idx = all.findIndex(r => r.id === reqId);
     if (idx === -1) { res.writeHead(404, { "Content-Type": "application/json" }); res.end('{"error":"Not found"}'); return; }
+
+    const wasAlreadyDone = all[idx].status === "done";
     all[idx].status = body.status;
     all[idx].updated_at = new Date().toISOString();
+
+    // Auto-create changelog entry when a suggestion is marked done (only once)
+    if (body.status === "done" && !wasAlreadyDone) {
+      const req_entry = all[idx];
+      const changelog = readChangelog();
+      // Avoid duplicates if already linked
+      const alreadyLinked = changelog.some(c => c.suggestion_id === req_entry.id);
+      if (!alreadyLinked) {
+        const clEntry = {
+          id: shortId(),
+          title: req_entry.title,
+          description: req_entry.description || null,
+          project: req_entry.project || null,
+          type: req_entry.type ?? "feature",
+          suggestion_id: req_entry.id,
+          completed_at: new Date().toISOString(),
+        };
+        changelog.push(clEntry);
+        try { writeChangelog(changelog); } catch (err) {
+          console.error("Failed to write changelog.json:", err.message);
+        }
+      }
+    }
+
     try { writeRequests(all); } catch {
       res.writeHead(500, { "Content-Type": "application/json" }); res.end('{"error":"Write failed"}'); return;
     }
@@ -353,6 +405,56 @@ async function handler(req, res) {
     if (idx === -1) { res.writeHead(404, { "Content-Type": "application/json" }); res.end('{"error":"Not found"}'); return; }
     const removed = all.splice(idx, 1)[0];
     try { writeRequests(all); } catch {
+      res.writeHead(500, { "Content-Type": "application/json" }); res.end('{"error":"Write failed"}'); return;
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, deleted: removed.id }));
+    return;
+  }
+
+  // Admin: create changelog entry (POST /api/admin/changelog)
+  if (pathname === "/api/admin/changelog" && req.method === "POST") {
+    if (!isAdmin) { res.writeHead(401, { "Content-Type": "application/json" }); res.end('{"error":"Unauthorized"}'); return; }
+    let body;
+    try { body = await readBody(req); } catch {
+      res.writeHead(400, { "Content-Type": "application/json" }); res.end('{"error":"Invalid JSON"}'); return;
+    }
+    const title = (body.title ?? "").trim();
+    if (!title || title.length > 200) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "title is required and must be 1–200 characters" }));
+      return;
+    }
+    const validTypes = ["feature", "bug", "improvement", "refactor", "other"];
+    const entry = {
+      id: shortId(),
+      title,
+      description: (body.description ?? "").trim() || null,
+      project: (body.project ?? "").trim().slice(0, 50) || null,
+      type: validTypes.includes(body.type) ? body.type : "feature",
+      suggestion_id: (body.suggestion_id ?? null),
+      completed_at: new Date().toISOString(),
+    };
+    const all = readChangelog();
+    all.push(entry);
+    try { writeChangelog(all); } catch (err) {
+      console.error("Failed to write changelog.json:", err.message);
+      res.writeHead(500, { "Content-Type": "application/json" }); res.end('{"error":"Write failed"}'); return;
+    }
+    res.writeHead(201, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(entry));
+    return;
+  }
+
+  // Admin: delete changelog entry (DELETE /api/admin/changelog/:id)
+  if (pathname.startsWith("/api/admin/changelog/") && req.method === "DELETE") {
+    if (!isAdmin) { res.writeHead(401, { "Content-Type": "application/json" }); res.end('{"error":"Unauthorized"}'); return; }
+    const clId = pathname.split("/").pop();
+    const all = readChangelog();
+    const idx = all.findIndex(c => c.id === clId);
+    if (idx === -1) { res.writeHead(404, { "Content-Type": "application/json" }); res.end('{"error":"Not found"}'); return; }
+    const removed = all.splice(idx, 1)[0];
+    try { writeChangelog(all); } catch {
       res.writeHead(500, { "Content-Type": "application/json" }); res.end('{"error":"Write failed"}'); return;
     }
     res.writeHead(200, { "Content-Type": "application/json" });

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lobs Lab</title>
-  <link rel="stylesheet" href="/styles.css?v=5" />
+  <link rel="stylesheet" href="/styles.css?v=6" />
   <script>
     const t = localStorage.getItem('lobslab-theme');
     if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
@@ -52,53 +52,101 @@
       </div>
     </main>
 
-    <!-- Feature Requests -->
+    <!-- Community (Suggestions + Changelog) -->
     <section class="requests-section">
-      <h2 class="section-title">Feature Requests</h2>
+      <h2 class="section-title">Feedback &amp; Updates</h2>
 
-      <!-- Submit form -->
-      <div class="req-form-card" id="req-form-card">
-        <form id="req-form" class="req-form" novalidate>
-          <div class="req-form-selects">
-            <select id="req-type" class="req-select">
-              <option value="feature">💡 Feature</option>
-              <option value="bug">🐛 Bug</option>
-            </select>
-            <select id="req-project" class="req-select">
-              <option value="">All / New idea</option>
-              <!-- Populated dynamically from services -->
-            </select>
-          </div>
-          <div class="req-form-row">
-            <input
-              type="text"
-              id="req-title"
-              class="req-input"
-              placeholder="Suggest a new service or feature…"
-              maxlength="100"
-              autocomplete="off"
-              required
-            />
-            <button type="submit" class="req-submit-btn" id="req-submit-btn">Submit</button>
-          </div>
-          <textarea
-            id="req-desc"
-            class="req-textarea"
-            placeholder="Optional: add more detail (up to 500 chars)"
-            maxlength="500"
-            rows="2"
-          ></textarea>
-          <div class="req-form-feedback" id="req-form-feedback" aria-live="polite"></div>
-        </form>
+      <!-- Tab bar -->
+      <div class="tab-bar" role="tablist" aria-label="Community tabs">
+        <button
+          class="tab-btn active"
+          id="tab-suggestions"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-suggestions"
+          data-tab="suggestions"
+        >
+          💡 Suggestions
+        </button>
+        <button
+          class="tab-btn"
+          id="tab-changelog"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-changelog"
+          data-tab="changelog"
+        >
+          🚀 Changelog
+        </button>
       </div>
 
-      <!-- Request list -->
-      <div id="req-list" class="req-list">
-        <!-- Injected by app.js -->
+      <!-- Suggestions panel -->
+      <div
+        class="tab-panel"
+        id="panel-suggestions"
+        role="tabpanel"
+        aria-labelledby="tab-suggestions"
+      >
+        <!-- Submit form -->
+        <div class="req-form-card" id="req-form-card">
+          <form id="req-form" class="req-form" novalidate>
+            <div class="req-form-selects">
+              <select id="req-type" class="req-select">
+                <option value="feature">💡 Feature</option>
+                <option value="bug">🐛 Bug</option>
+              </select>
+              <select id="req-project" class="req-select">
+                <option value="">All / New idea</option>
+                <!-- Populated dynamically from services -->
+              </select>
+            </div>
+            <div class="req-form-row">
+              <input
+                type="text"
+                id="req-title"
+                class="req-input"
+                placeholder="Suggest a new service or feature…"
+                maxlength="100"
+                autocomplete="off"
+                required
+              />
+              <button type="submit" class="req-submit-btn" id="req-submit-btn">Submit</button>
+            </div>
+            <textarea
+              id="req-desc"
+              class="req-textarea"
+              placeholder="Optional: add more detail (up to 500 chars)"
+              maxlength="500"
+              rows="2"
+            ></textarea>
+            <div class="req-form-feedback" id="req-form-feedback" aria-live="polite"></div>
+          </form>
+        </div>
+
+        <!-- Request list -->
+        <div id="req-list" class="req-list">
+          <!-- Injected by app.js -->
+        </div>
+        <div id="req-empty" class="req-empty hidden">
+          <span class="req-empty-icon">💡</span>
+          <p>No requests yet — be the first to suggest something!</p>
+        </div>
       </div>
-      <div id="req-empty" class="req-empty hidden">
-        <span class="req-empty-icon">💡</span>
-        <p>No requests yet — be the first to suggest something!</p>
+
+      <!-- Changelog panel -->
+      <div
+        class="tab-panel hidden"
+        id="panel-changelog"
+        role="tabpanel"
+        aria-labelledby="tab-changelog"
+      >
+        <div id="changelog-list" class="changelog-list">
+          <!-- Injected by app.js -->
+        </div>
+        <div id="changelog-empty" class="changelog-empty hidden">
+          <span class="changelog-empty-icon">🛠️</span>
+          <p>Nothing shipped yet — check back soon!</p>
+        </div>
       </div>
     </section>
 
@@ -125,6 +173,6 @@
 
   </div>
 
-  <script src="/app.js?v=5"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>
