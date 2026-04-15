@@ -12,6 +12,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - lobslab
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/api/overview || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -21,7 +29,8 @@ services:
       - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
       - ./tunnel-credentials.json:/etc/cloudflared/credentials.json:ro
     depends_on:
-      - traefik
+      traefik:
+        condition: service_started
     networks:
       - lobslab
 
@@ -30,9 +39,8 @@ services:
       context: ./home
     restart: unless-stopped
     environment:
-      - ADMIN_SECRET=cc39f69052f16497650e05822933620b539c5912b2cc5ded
-    ports:
-      - "127.0.0.1:3100:3000"
+      - ADMIN_SECRET=${ADMIN_SECRET:-}
+      - TRAEFIK_API=http://traefik:8080
     volumes:
       - home-data:/app/data
     networks:
@@ -42,6 +50,102 @@ services:
       - "traefik.http.routers.lobslab-home.rule=Host(`home.lobslab.com`)"
       - "traefik.http.routers.lobslab-home.entrypoints=web"
       - "traefik.http.services.lobslab-home.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  crapuler:
+    build:
+      context: ../lobslab-apps/apps/crapuler
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crapuler.rule=Host(`crapuler.lobslab.com`)"
+      - "traefik.http.routers.crapuler.entrypoints=web"
+      - "traefik.http.services.crapuler.loadbalancer.server.port=4317"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4317/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  ballz:
+    build:
+      context: ../lobslab-apps/apps/ballz
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ballz.rule=Host(`ballz.lobslab.com`)"
+      - "traefik.http.routers.ballz.entrypoints=web"
+      - "traefik.http.services.ballz.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  stellar-siege:
+    build:
+      context: ../lobslab-apps/apps/stellar-siege
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.stellar-siege.rule=Host(`stellar-siege.lobslab.com`)"
+      - "traefik.http.routers.stellar-siege.entrypoints=web"
+      - "traefik.http.services.stellar-siege.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  ballz-royale:
+    build:
+      context: ../lobslab-apps/apps/ballz-royale
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ballz-royale.rule=Host(`ballz-royale.lobslab.com`)"
+      - "traefik.http.routers.ballz-royale.entrypoints=web"
+      - "traefik.http.services.ballz-royale.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  games:
+    build:
+      context: ../lobslab-apps/apps/games
+    restart: unless-stopped
+    networks:
+      - lobslab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.games.rule=Host(`games.lobslab.com`)"
+      - "traefik.http.routers.games.entrypoints=web"
+      - "traefik.http.services.games.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   home-data:
@@ -49,4 +153,4 @@ volumes:
 networks:
   lobslab:
     name: lobslab
-    external: true
+    driver: bridge

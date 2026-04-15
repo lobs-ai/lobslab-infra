@@ -469,7 +469,9 @@ async function handler(req, res) {
   }
 
   // Other static files (styles.css, app.js, etc.)
-  const safePath = path.join(__dirname, path.normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, ""));
+  // Strip leading slash then join with __dirname to ensure files stay within app directory
+  const normalized = path.normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, "");
+  const safePath = path.join(__dirname, normalized.replace(/^\//, ""));
   if (safePath.startsWith(__dirname)) {
     serveStatic(res, safePath);
   } else {
@@ -481,7 +483,7 @@ async function handler(req, res) {
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const server = http.createServer(handler);
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🏠 Lobs Lab home server running on port ${PORT}`);
   console.log(`   Traefik API: ${TRAEFIK_API}`);
 });

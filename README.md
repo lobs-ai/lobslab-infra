@@ -1,27 +1,45 @@
 # lobslab-infra
 
-Reverse-proxy stack for `*.lobslab.com` — Traefik behind a Cloudflare Tunnel.
+Reverse-proxy stack for `*.lobslab.com` — Traefik behind a Cloudflare Tunnel. Unified deployment includes all apps.
 
 > **lobslab.com root** is hosted on GitHub Pages. Do not add a route for it here.
 
 ---
 
-## Architecture
+## Architecture (Unified Deployment)
 
 ```
 Internet
   └── Cloudflare (DNS: *.lobslab.com wildcard CNAME → tunnel)
-        └── Cloudflare Tunnel (tunnel ID: 5e8ce13d-...)
-              └── cloudflared container
-                    └── Traefik :80  (Docker network: lobslab)
-                          ├── traefik.lobslab.com  → Traefik dashboard  [PRIVATE]
-                          ├── nexus.lobslab.com    → host:9420           [PRIVATE]
-                          └── *.lobslab.com        → Docker labels       [add more here]
+        └── cloudflared
+              └── Traefik :80  (Docker network: lobslab)
+                    ├── home.lobslab.com      → lobslab-home (landing page)
+                    ├── crapuler.lobslab.com  → crapuler app
+                    ├── ballz.lobslab.com     → ballz app
+                    ├── stellar-siege.lobslab.com → stellar-siege app
+                    ├── ballz-royale.lobslab.com  → ballz-royale app
+                    ├── games.lobslab.com     → games dashboard
+                    ├── traefik.lobslab.com   → Traefik dashboard [PRIVATE]
+                    └── nexus.lobslab.com     → host:9420 [PRIVATE]
 ```
 
-- **Cloudflare handles TLS** — all traffic inside Docker is plain HTTP on port 80.
-- **Traefik routes by subdomain** — via Docker labels (auto-discovery) or `traefik/dynamic.yml` (host services).
-- **Access control is at the Cloudflare edge** — private services use Cloudflare Access (Zero Trust), not Traefik middleware.
+**Unified Deployment**: All services (infra + apps) are deployed via a single `docker compose up` from this directory. Apps are built from `../lobslab-apps/apps/*`.
+
+---
+
+## Quick Start
+
+```bash
+# Clone repos side by side
+git clone https://github.com/lobs-ai/lobslab-infra
+git clone https://github.com/lobs-ai/lobslab-apps ../lobslab-apps
+
+# First-time setup
+./setup.sh
+
+# Deploy (rebuilds everything)
+./deploy.sh
+```
 
 ---
 

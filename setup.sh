@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# setup.sh — First-time setup for lobslab-infra
+# setup.sh — First-time setup for lobslab-infra (unified deployment)
 #
 # Run after a fresh clone or system restore.
 # =============================================================================
@@ -21,42 +21,49 @@ if [ ! -f "$SCRIPT_DIR/tunnel-credentials.json" ]; then
     exit 1
 fi
 
-# ── Create Docker network ─────────────────────────────────────────────────────
-echo "🌐 Ensuring lobslab Docker network exists..."
-if ! docker network inspect lobslab >/dev/null 2>&1; then
-    docker network create lobslab
-    echo "   ✓ Network 'lobslab' created"
-else
-    echo "   ✓ Network 'lobslab' already exists"
-fi
+# ── Check apps directory ───────────────────────────────────────────────────────
+APPS_DIR="$(cd "$SCRIPT_DIR/../lobslab-apps" && pwd 2>/dev/null)" || {
+    echo "⚠️  lobslab-apps not found as sibling directory."
+    echo "   Apps will fail to build. Clone it with:"
+    echo "   git clone https://github.com/lobs-ai/lobslab-apps ../lobslab-apps"
+}
 
-# ── Pull images + start stack ─────────────────────────────────────────────────
-echo "🐳 Starting Docker stack..."
-docker compose pull --quiet
+# ── Build and start stack ─────────────────────────────────────────────────────
+echo "🐳 Building and starting Docker stack..."
+docker compose build --parallel
+
+echo "🚀 Starting services..."
 docker compose up -d --remove-orphans
 
 # ── Verify containers ─────────────────────────────────────────────────────────
-sleep 3
+sleep 5
 echo ""
 echo "Container status:"
 docker compose ps --format "  {{.Name}}: {{.Status}}"
 
-# ── Done ──────────────────────────────────────────────────────────────────────
+# ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "✅ Setup complete!"
 echo ""
-echo "Architecture:"
-echo "  Internet → Cloudflare (*.lobslab.com) → Tunnel → cloudflared → Traefik"
-echo "    traefik.lobslab.com  → Traefik dashboard  (PRIVATE — Cloudflare Access)"
-echo "    nexus.lobslab.com    → lobs-core :9420     (PRIVATE — Cloudflare Access)"
+echo "Architecture (unified deployment):"
+echo "  Internet → Cloudflare (*.lobslab.com) → Tunnel → cloudflared → Traefik :80"
+echo "    home.lobslab.com      → lobslab-home (landing page)"
+echo "    *.lobslab.com         → App services (auto-discovered via Docker labels)"
 echo ""
-echo "Next steps (if first time):"
-echo "  1. Set DNS wildcard CNAME in Cloudflare dashboard:"
-echo "     *.lobslab.com → 5e8ce13d-a3f2-4217-a135-d9b0b3a35ba5.cfargotunnel.com"
-echo "  2. Create Cloudflare Access policies for traefik.lobslab.com and nexus.lobslab.com"
-echo "  3. Make sure lobs-core is running on host port 9420"
+echo "Public services:"
+echo "  https://home.lobslab.com"
+echo "  https://crapuler.lobslab.com"
+echo "  https://ballz.lobslab.com"
+echo "  https://stellar-siege.lobslab.com"
+echo "  https://ballz-royale.lobslab.com"
+echo "  https://games.lobslab.com"
+echo ""
+echo "Private services (Cloudflare Access required):"
+echo "  https://traefik.lobslab.com"
+echo "  https://nexus.lobslab.com"
 echo ""
 echo "Useful commands:"
-echo "  ./deploy.sh status       — check running services"
-echo "  ./deploy.sh logs         — tail all logs"
-echo "  ./deploy.sh add <name>   — scaffold a new service"
+echo "  ./deploy.sh          — full rebuild + restart"
+echo "  ./deploy.sh build    — build images only"
+echo "  ./deploy.sh status   — check running services"
+echo "  ./deploy.sh logs     — tail all logs"

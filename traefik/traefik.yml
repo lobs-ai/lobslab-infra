@@ -27,3 +27,4 @@ accessLog: {}
 # Main log
 log:
   level: INFO
+  format: json
