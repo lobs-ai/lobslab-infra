@@ -20,7 +20,8 @@ Internet
                     ├── ballz-royale.lobslab.com  → ballz-royale app
                     ├── games.lobslab.com     → games dashboard
                     ├── traefik.lobslab.com   → Traefik dashboard [PRIVATE]
-                    └── nexus.lobslab.com     → host:9420 [PRIVATE]
+                    ├── nexus.lobslab.com     → host:9420 [PRIVATE]
+                    └── cortex.lobslab.com    → host:9009 [PRIVATE]
 ```
 
 **Unified Deployment**: All services (infra + apps) are deployed via a single `docker compose up` from this directory. Apps are built from `../lobslab-apps/apps/*`.
@@ -50,6 +51,7 @@ git clone https://github.com/lobs-ai/lobslab-apps ../lobslab-apps
 | Home (landing page) | `home.lobslab.com` | **Public** | Auto-discovers public services via Traefik API |
 | Traefik dashboard | `traefik.lobslab.com` | **Private** | Cloudflare Access required |
 | Nexus (lobs-core) | `nexus.lobslab.com` | **Private** | Cloudflare Access required; routes to host port 9420 |
+| Cortex | `cortex.lobslab.com` | **Private** | Cloudflare Access required; routes to host port 9009 |
 
 ---
 
@@ -86,6 +88,7 @@ Access control happens in the **Cloudflare Zero Trust dashboard**, not in config
 |-----------|--------|-----|
 | `traefik.lobslab.com` | Email allowlist | Rafe only |
 | `nexus.lobslab.com` | Email allowlist | Rafe only |
+| `cortex.lobslab.com` | Email allowlist | Rafe only |
 
 To configure: **Zero Trust → Access → Applications → Add application → Self-hosted**
 
@@ -109,7 +112,7 @@ cd lobslab-infra
 
 Then in the Cloudflare dashboard:
 1. Add the wildcard DNS CNAME (see DNS Setup above)
-2. Add Access policies for `traefik.lobslab.com` and `nexus.lobslab.com`
+2. Add Access policies for `traefik.lobslab.com`, `nexus.lobslab.com`, and `cortex.lobslab.com`
 
 ---
 

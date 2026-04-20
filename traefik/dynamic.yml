@@ -20,9 +20,23 @@ http:
         - web
       service: nexus
 
+    # ── Cortex (cortex on host port 9009) ────────────────────────────────────
+    # PRIVATE — requires Cloudflare Access policy for cortex.lobslab.com
+    cortex:
+      rule: "Host(`cortex.lobslab.com`)"
+      entryPoints:
+        - web
+      service: cortex
+
   services:
-    # ── Nexus — routes to lobs-core running on host machine ─────────────────
+    # ── Nexus — routes to lobs-core running on host machine ─────────────────────
     nexus:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:9420"
+
+    # ── Cortex — routes to cortex running on host machine ──────────────────────
+    cortex:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:9009"

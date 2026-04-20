@@ -59,6 +59,7 @@ status() {
   echo -e "${BOLD}Private Services (Cloudflare Access):${NC}"
   echo "  https://traefik.lobslab.com"
   echo "  https://nexus.lobslab.com"
+  echo "  https://cortex.lobslab.com"
 }
 
 # ── Logs ──────────────────────────────────────────────────────────────────────

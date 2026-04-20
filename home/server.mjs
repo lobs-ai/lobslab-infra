@@ -20,6 +20,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 // Hostnames that should never appear on the home page
 const PRIVATE_HOSTS = new Set([
   "nexus.lobslab.com",
+  "cortex.lobslab.com",
   "traefik.lobslab.com",
   "home.lobslab.com",
 ]);

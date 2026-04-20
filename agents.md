@@ -98,6 +98,7 @@ Omit the Cloudflare Access policy. Traefik routes it and anyone can reach it.
 | Home | `home.lobslab.com` | Docker container | Public |
 | Traefik dashboard | `traefik.lobslab.com` | Host service | **Private** — Cloudflare Access |
 | Nexus (lobs-core) | `nexus.lobslab.com` | Host port 9420 | **Private** — Cloudflare Access |
+| Cortex | `cortex.lobslab.com` | Host port 9009 | **Private** — Cloudflare Access |
 
 ## Troubleshooting
 
@@ -107,6 +108,7 @@ Omit the Cloudflare Access policy. Traefik routes it and anyone can reach it.
 | Subdomain not responding | `./deploy.sh logs traefik` — verify labels and network |
 | Tunnel disconnected | `./deploy.sh logs cloudflared` — verify `tunnel-credentials.json` is present |
 | Nexus 502 | Ensure lobs-core is running on host port 9420: `curl http://localhost:9420` |
+| Cortex 502 | Ensure cortex is running on host port 9009: `curl http://localhost:9009` |
 | Traefik dashboard 404 | Verify `lobslab` network exists and Traefik container is running |
 
 ## Files
